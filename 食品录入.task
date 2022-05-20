@@ -1,0 +1,423 @@
+//元素操作重试次数
+Const ELEMENT_REPEAT_COUNT= 10
+//流程操作重试次数
+Const FLOW_REPEAT_COUNT=3
+//流程运行状态值
+Dim run_statue=0
+//源数据 
+Dim data=[[
+"菏泽开发区深畅饮品店",	"JY23717710002889",	"有效",	"餐饮服务经营者（非连锁）",	
+"餐饮服务/饮品店",	"自制饮品制售（不含使用压力容器制作饮品）",	"山东省菏泽市开发区丹阳办事处长江东路万达金街1002幢02单元02127号",	"刘德军",	
+"372922197412286514",	"92371700MA7MTYR610",	"2022/05/07",	"2027/05/06",	"2022/05/07",	"菏泽市经济开发区行政审批服务局",	"15005301228",	"菏泽经济开发区综合监管部丹阳综合监管所"],
+[
+"菏泽开发区深畅饮品店",	"JY23717710002889",	"有效",	"餐饮服务经营者（非连锁）",	
+"餐饮服务/饮品店",	"自制饮品制售（不含使用压力容器制作饮品）",	"山东省菏泽市开发区丹阳办事处长江东路万达金街1002幢02单元02127号",	"刘德军",	
+"372922197412286514",	"92371700MA7MTYR610",	"2022/05/07",	"2027/05/06",	"2022/05/07",	"菏泽市经济开发区行政审批服务局",	"15005301228",	"菏泽经济开发区综合监管部丹阳综合监管所"]]
+
+Rem 抛出错误
+Function throw_info(e)
+	Return  "错误定位：文件名：【"&e["File"]&"】 位置：【第"&e["Line"]&"行】 错误原因：【"&e["Message"]&"】"
+End Function
+
+Rem 登陆账户
+Function login()
+	//登陆浏览器对象
+	Dim login_tab
+	//云受理页面对象
+	Dim yunshouli
+	
+	login_tab = WebBrowser.Create("firefox","http://59.206.6.96:8385/Inspur.Dzzw.WebApproval/logout",30000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"sBrowserPath":"","sStartArgs":""})
+	If logintab<>Null
+		Try 3
+			#icon("@res:4ff4p2ll-rqgb-7unt-grlf-fhv9d3i1clh3.png")
+			UiElement.SetValue({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"INPUT","id":"username"}]},"kfqwsjklr",{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
+			#icon("@res:ljloo41j-oks2-ae5s-9037-2j1rortld1tv.png")
+			UiElement.SetValue({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"INPUT","id":"password"}]},"123456",{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
+			#icon("@res:fq6d21f8-nhq2-2d1l-eo8a-373mpkhumllj.png")
+			Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"BUTTON","parentid":"frm-login"}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})		
+		Catch e
+			WebBrowser.Close(login_tab,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
+			TracePrint("用户登陆异常，请重试！！！")
+			throw_info(e)
+		Else
+			Try 3
+				#icon("@res:eh0scuo6-bnvn-hdhe-motf-5c59dh3taqe9.png")
+				yunshouli = WebBrowser.GoURL(login_tab,"http://59.206.6.96:8385/Inspur.Dzzw.WebApproval/main ",True,{"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"A","parentid":"cloudSF"}]},30000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
+				
+			Catch e
+				WebBrowser.Close(yunshouli,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
+				TracePrint("跳转云处理审批平台失败，请重试！！！")
+				throw_info(e)
+			Else
+				all_lr()
+			End Try
+		End Try
+	Else
+		TracePrint("打开浏览器错误！！！")
+		Throw "打开浏览器错误！！！"
+	End If
+End Function
+
+
+
+//each_lr_step_1
+Function each_lr_step_1()
+	
+	Try ELEMENT_REPEAT_COUNT
+		#icon("@res:el3oi38v-nbg2-38ue-c359-34cril9kgqsa.png")
+		Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"A","parentid":"hxryj"}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})
+		#icon("@res:cobao0cl-gjjl-lgck-jn0k-ccnmf4b6icos.png")
+		Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"BUTTON","id":"btnSign"}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})
+		#icon("@res:0khdtuo6-c8cj-bc3f-4kug-kt3hf73qrur7.png")
+		Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"BUTTON"}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})
+		
+	Catch e
+		run_statue=1
+		Throw throw_info(e)
+	Else
+		run_statue=each_lr_step_2()
+	End Try
+	
+End Function
+
+//each_lr_step_2
+Function each_lr_step_2()
+	Try ELEMENT_REPEAT_COUNT
+		#icon("@res:15m2dhbd-h95h-eg5s-jrod-5s7dlv5c5fjr.png")
+		Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"INS","parentid":"node_sid-3592A3DF-2974-4D37-9490-CBED91C8D033","idx":3}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})
+		#icon("@res:oq9k9g7p-9ies-sb70-54oo-ckp954rjlefu.png")
+		Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"BUTTON","id":"btnSubmit"}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})
+		#icon("@res:t4m5ag73-haf6-bc4m-0rvg-qvu6iq6dgeku.png")
+		Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"BUTTON"}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})
+		#icon("@res:phdqsgci-r0bs-6483-vitv-scia21snkvgv.png")
+		Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"BUTTON","aaname":"确定"}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})
+		
+	Catch e
+		run_statue=2
+		Throw throw_info(e)
+	Else
+		run_statue=each_lr_step_3()
+	End Try
+	
+	
+End Function
+
+//each_lr_step_3
+Function each_lr_step_3()
+	
+	Try ELEMENT_REPEAT_COUNT
+		#icon("@res:bd8kg0ld-vit1-1boc-jauf-efn35p0qa6fu.png")
+		Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"A","parentid":"hxryj"}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})
+		#icon("@res:1jtr5ttl-tfuf-rnf3-r59g-a8empb38uoec.png")
+		Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"INS","parentid":"node_sid-1A1648FD-D927-47AC-99F1-97EC6F9D6A10","idx":3}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})
+		#icon("@res:ase7dkuj-nv9f-0123-hva9-vefjc8l2fhrv.png")
+		Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"BUTTON","id":"btnSubmit"}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})
+		#icon("@res:vbrtsf7u-usf9-gshc-njv7-h502ff616jc7.png")
+		Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"BUTTON"}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})
+		#icon("@res:rojuft6p-o1kj-b6db-r900-a92fpunb34rs.png")
+		Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"BUTTON","aaname":"确定"}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})
+		
+	Catch e
+		run_statue=3
+		Throw throw_info(e)
+	Else
+		run_statue=each_lr_step_4()
+	End Try
+	
+	
+End Function
+//each_lr_step_4
+Function each_lr_step_4()
+	Try ELEMENT_REPEAT_COUNT
+		#icon("@res:cqj2vh52-520q-17ml-27as-476rfbgqbjsh.png")
+		Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"A","parentid":"hxryj"}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})
+		#icon("@res:afghiuoo-6mis-6cs4-8jjr-jdju18jr78u2.png")
+		Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"INS","parentid":"node_sid-C381ACCE-D7BB-4728-808E-09173CB6F6D3","idx":3}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})
+		#icon("@res:b7icffk6-59al-vmle-g946-ae0h3t4qdlco.png")
+		Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"BUTTON","id":"btnSubmit"}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})
+		#icon("@res:udltjv4c-f0ib-9f9q-gmm8-81ail7f7binh.png")
+		Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"BUTTON"}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})
+		#icon("@res:so4imm07-v7fm-enh5-5kf6-0uk5571696f0.png")
+		Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"BUTTON","aaname":"确定"}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})
+		
+	Catch e
+		run_statue=4
+		Throw throw_info(e)
+	Else
+		run_statue=each_lr_step_5()
+	End Try
+	
+	
+End Function
+
+//each_lr_step_5
+Function each_lr_step_5()
+	
+	Try ELEMENT_REPEAT_COUNT
+		#icon("@res:7ckmrh59-a04c-veae-692k-frh7d6juhhnu.png")
+		Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"A","parentid":"hxryj"}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})
+		#icon("@res:ip4mac42-508q-op7g-cion-bjrpfb503lp5.png")
+		Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"BUTTON","id":"btnGrant"}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})
+		
+	Catch e
+		run_statue=5
+		Throw throw_info(e)
+	Else
+		run_statue=each_lr_step_6()
+	End Try
+	
+End Function
+
+
+//通过个人社会信用代码在数据中查找个人信息
+Function person_info(society_code,data)
+	society_code = Replace(society_code," ","",False)
+	Dim person=[]
+	For Each row In data
+		If StrComp(row[9],society_code,True) // 社会信用代码
+			person=push(person,row[1])    // 许可证号
+			person=push(person,"食品经营许可证")  // 许可证类型
+			person=push(person,Replace(row[12],"/","-",False))  // 发证日期
+			person=push(person,Replace(row[10],"/","-",False))  // 有效期自
+			person=push(person,Replace(row[11],"/","-",False))  // 有效期至
+			person=push(person,row[5])  // 经营项目
+		End If
+	Next
+	If Len(person)=6  //大于6或小于6则数据有异常
+		Return person
+	Else
+		TracePrint("数据异常(未查找到数据或数据不唯一)，请检查")
+		TracePrint(person)
+		Return Null
+	End If
+End Function
+
+//测试方法
+// Dim society_code="92371700MA7MTYR610"
+// TracePrint person_info(society_code,data)
+
+//日期处理
+Function use_date()
+	
+	
+End Function
+
+//each_lr_step_6
+Function each_lr_step_6()
+	//社会信用编号代码
+	Dim society_code
+	//通过社会信用编号代码查找到的用户数据
+	Dim person_data
+	//日期结果检查
+	Dim date_judge=''
+	
+	Try ELEMENT_REPEAT_COUNT
+		#icon("@res:i85v8mrs-ij16-nkra-lqh7-0dslpv9mc20c.png")
+		society_code = UiElement.GetValue({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_D05BA669587646F796E296438E97AEB9"},{"tag":"INPUT","id":"creditCode","type":"text"}]},{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
+		//获取个人数据 
+		person_data = person_info(society_code,data)
+		If person_data<>Null
+			#icon("@res:kctqnef1-st9u-blsl-p6h3-808l67gdvna3.png")
+			UiElement.SetValue({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"INPUT","id":"docCode"}]},person_data[0],{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
+			#icon("@res:79m8jf33-uvss-854j-8959-l9c1hroisq3d.png")
+			UiElement.SetValue({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"INPUT","id":"docName"}]},person_data[1],{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
+			
+			
+			//定位元素还没有抓取
+			WebBrowser.RunJS(login_tab,"function(){document.querySelector('').value='"&person_data[2]&"';return 123}",True,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
+			#icon("@res:default.png")
+			date_judge = UiElement.GetValue({},{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
+			
+			
+			If Not StrComp(date_judge,person_data[12],True)
+				Throw("数据异常") 
+			End If
+			
+			WebBrowser.RunJS(login_tab,"function(){document.querySelector('').value='"&person_data[2]&"';return 123}",True,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
+			#icon("@res:default.png")
+			date_judge = UiElement.GetValue({},{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
+			If Not StrComp(date_judge,person_data[10],True)
+				Throw("数据异常") 
+			End If
+			WebBrowser.RunJS(login_tab,"function(){document.querySelector('').value='"&person_data[2]&"';return 123}",True,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
+			#icon("@res:default.png")
+			date_judge = UiElement.GetValue({},{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
+			If Not StrComp(date_judge,person_data[11],True)
+				Throw("数据异常") 
+			End If
+			
+			//处理日期选择
+			use_date()
+			
+			#icon("@res:b7eh0m81-ns43-s61v-099f-ja6rliejhadn.png")
+			UiElement.SetValue({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"TEXTAREA","id":"Permit_Content"}]},person_data[5],{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
+			#icon("@res:n5m8agde-ikc5-8nhr-7m9a-2uobc5kv8bs5.png")
+			Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"BUTTON","aaname":"确定"}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})
+			#icon("@res:lj2f1afb-64l0-hcmn-vm8v-glc79vv8qonv.png")
+			Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"BUTTON"}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})
+		Else
+		End If    
+	Catch e
+		run_statue=6
+		Throw throw_info(e)
+	End Try
+	
+End Function
+
+
+
+
+
+
+
+Rem 录入每一条流程
+Function each_lr()
+	run_statue=0
+	run_statue=each_lr_step_1()
+	
+End Function
+
+
+Rem 遍历需要录入的流程列表 一条一条录入
+Function all_lr()
+	//数据条数
+	Dim data_count
+	//办理对象是否存在
+	Dim is_exist_banli
+	//成功录入数据条数
+	Dim true_count_lr=0
+	//失败录入数据条数
+	Dim false_count_lr=0
+	// 事项编号
+	Dim id_lr
+	Do While True
+		Try FLOW_REPEAT_COUNT
+			#icon("@res:eh0scuo6-bnvn-hdhe-motf-5c59dh3taqe9.png")
+			Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"A","parentid":"cloudSF"}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})
+			#icon("@res:pkgkne4b-ectb-25jf-hu74-9nleem0pi9cn.png")
+			Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_D05BA669587646F796E296438E97AEB9"},{"tag":"SPAN","parentid":"refresh_approval-cloudaccept-grid-table"}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})
+			#icon("@res:0cvr2ev5-iiev-anis-rs0n-pk5bih139gf9.png")
+			is_exist_banli = UiElement.Exists({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"A","parentid":"1","aaname":"办理"}]},{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
+			
+			//数据 条数多重判断///////////////////////////////////////////////////////
+			#icon("@res:cf92dsjj-172e-ce9g-6pek-oe67jia0i0c5.png")
+			data_count= UiElement.GetValue({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"TABLE","id":"approval-cloudaccept-grid-table"},{"tag":"TD","parentid":"1","isleaf":"1","tableCol":"3"}]},{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
+			
+			data_count = Regex.FindAll(data_count_array,"\\d")
+			// ///////////////////////////////////////////////////////
+			If is_exist_banli 
+				#icon("@res:cf92dsjj-172e-ce9g-6pek-oe67jia0i0c5.png")
+				id_lr = UiElement.GetValue({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"TABLE","id":"approval-cloudaccept-grid-table"},{"tag":"TD","parentid":"1","isleaf":"1","tableCol":"3"}]},{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
+				#icon("@res:0cvr2ev5-iiev-anis-rs0n-pk5bih139gf9.png")
+				Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"A","parentid":"1","aaname":"办理"}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})
+				
+			Else
+				If true_count_lr>0 Or false_count_lr>0
+					TracePrint("本次共录入"&true_count_lr+false_count_lr&"条数据，"&true_count_lr&"条录入成功,"&false_count_lr&"条录入失败！！！")
+					Break
+				Else
+					TracePrint("未查找到需要录入的新增数据，请先进行第一步录入流程录入数据  ！！！")
+					Break
+				End If
+				
+			End If
+		Catch e
+			throw_info(e)
+		Else
+			Try
+				each_lr()
+			Catch e
+				result_lr(id_lr,run_statue,result="录入失败")
+				false_count_lr=false_count_lr+1
+			Else
+				result_lr(id_lr)
+				true_count_lr=true_count_lr+1
+			End Try
+			
+		End Try
+	Loop	
+End Function
+
+// #icon("@res:0cvr2ev5-iiev-anis-rs0n-pk5bih139gf9.png")
+// Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"A","parentid":"1","aaname":"办理"}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})
+
+//成功/失败数据写入文件
+Function result_lr(id_lr,run_statue=0,result="录入成功")
+	Dim file_time = Time.Format(Time.Date(),"yyyy-mm-dd")
+	INI.Write(@res""&file_time&".ini", result, id_lr,run_statue )
+End Function
+
+// result_lr("123","2","录入失败")
+// result_lr("1234","22","录入失败")
+// result_lr("12345","22","录入失败")
+
+
+
+//录入失败数据重新录入操作
+Function repeat_try_false_lr(file_time)
+	//文件名
+	Dim result_lr_file=@res""&file_time&".ini"
+	//判断result_lr文件是否存在
+	Dim is_result_lr_file
+	//录入失败事项编号数组
+	Dim array_key
+	//事项编号值
+	Dim key_value
+	//录入失败键数量
+	Dim key_count
+	//初始化run_status默认值
+	run_status=0
+	
+	is_result_lr_file = File.FileExists(result_lr_file)
+	If is_result_lr_file
+		array_key = INI.EnumKey(result_lr_file, "录入失败")
+		For Each key In array_key
+			key_value = INI.Read(result_lr_file, "录入失败", key, "")
+			If key_value<>""
+				Try
+					// key_value=CInt(key_value)
+					Select Case key_value
+					Case "1"
+						each_lr_step_1()
+					Case "2"
+						each_lr_step_2()
+					Case "3"
+						each_lr_step_3()
+					Case "4"
+						each_lr_step_4()   
+					Case "5"
+						each_lr_step_5()
+					Case "6"
+						each_lr_step_6() 
+					End Select
+				Catch e
+					result_lr(key,run_statue,result="录入失败")
+					TracePrint(e)
+				Else
+					result_lr(id_lr)
+					INI.DeleteKey(result_lr_file, "录入失败", key)
+					key_count= INI.EnumKey(result_lr_file, "录入失败")
+					If Len(key_count)<=0
+						TracePrint("当前日期数据 已全部录入成功，无录入失败数据 ！！！")
+						INI.DeleteSection(result_lr_file, "录入失败")
+					End If
+				End Try
+				
+			Else
+				TracePrint("此流程录入数据未正确写入文件，请检查 ！！！")
+			End If
+			
+		Next
+		
+		
+	Else
+		TracePrint("未查找到当前日期录入数据！！！")
+	End If
+	
+End Function
+
+// Dim file_time = Time.Format(Time.Date(),"yyyy-mm-dd")
+
+// repeat_try_false_lr(file_time)
+
+

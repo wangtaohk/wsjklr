@@ -1,0 +1,57 @@
+{
+  "id": "3ab3f852065c94",
+  "name": "新建流程",
+  "version": "6.0.0.211215",
+  "variables": [
+    {
+      "type": "in",
+      "name": "input",
+      "value": "\"\""
+    },
+    {
+      "type": "out",
+      "name": "output",
+      "value": "\"\""
+    }
+  ],
+  "flow": [
+    {
+      "id": "start",
+      "rect": {
+        "x": 0,
+        "y": 10,
+        "width": 140,
+        "height": 50
+      },
+      "caption": "流程开始",
+      "type": "begin",
+      "next": {
+        "vertices": [],
+        "refId": "uibot3ab3f852067be8"
+      }
+    },
+    {
+      "id": "uibot3ab3f852067be8",
+      "rect": {
+        "x": 0,
+        "y": 100,
+        "width": 196,
+        "height": 64
+      },
+      "caption": "素材",
+      "type": "task",
+      "next": {
+        "vertices": [],
+        "refId": ""
+      },
+      "exception": {
+        "vertices": [],
+        "refId": ""
+      },
+      "file": "流程块.task",
+      "in": "",
+      "out": ""
+    }
+  ],
+  "type": "flow"
+}
