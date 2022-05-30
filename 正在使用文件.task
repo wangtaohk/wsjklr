@@ -1,37 +1,52 @@
-Const ELEMENT_REPEAT_COUNT= 1  //元素操作重试次数
-Const FLOW_REPEAT_COUNT=3  //流程操作重试次数
+Const ELEMENT_REPEAT_COUNT= 3  //操作重试次数
 Dim person_data=[]  //通过社会信用编号代码查找到的用户数据
 Dim login_tab=Null  //登陆浏览器对象
 Dim society_code ='' //第一步流程社会信用代码值
 Dim current_id_lr=1 //当前录入的流程ID 
 Dim id_lr=""  // 事项编号
 Dim search_result="" //接收查询本地是否有相关数据返回结果
+Dim ysl  //云受理页面对象
+Dim data=[] //源数据 
 
-//源数据 
-Dim data=[["菏泽潮牛餐饮管理有限公司",	"JY23717710003003",	"有效",	"餐饮服务经营者（非连锁）",	"餐饮服务/中型餐馆",	"热食类食品制售",	"山东省菏泽市开发区丹阳办事处赵堂社区中达好旺角1#楼C区",	"曲玲",
-"372901196810041225",	"91371700MA3CK24L56",	"2022/05/10",	"2027/05/09",	"2022/05/10",	"菏泽市经济开发区行政审批服务局",	"15562048056",	"菏泽经济开发区综合监管部丹阳综合监管所"],
-["菏泽开发区一锅羊肉汤烩面店",	"JY23717710003038",	"有效",	"餐饮服务经营者（非连锁）",	"餐饮服务/快餐店",	"热食类食品制售",	"山东省菏泽市开发区陈集镇国华路与南环路交汇处北路东第5-7间",
-"李荣芹",	"372923197506024423",	"92371700MA7DPG2C2M",	"2022/05/10",	"2027/05/09",	"2022/05/10",	"菏泽市经济开发区行政审批服务局",	"18369061889",	"菏泽经济开发区综合监管部陈集综合监管所"],
-[ "菏泽开发区肖红面食小吃店",	"JY23717710002985",	"有效",	"餐饮服务经营者（非连锁）",	"餐饮服务/小吃店",	"热食类食品制售",	"山东省菏泽市开发区丹阳办事处桂陵路万象广场3号楼二单元20115",
-"张有才",	"372925198910111913",	"92371700MA7KUCWWXY",	"2022/05/10",	"2027/05/09",	"2022/05/10",	"菏泽市经济开发区行政审批服务局",	"15562071913",	"菏泽经济开发区综合监管部丹阳综合监管所"]]
+Function data_gen()  // 测试数据生成
+	b = Excel.OpenExcel("C:\\Users\\Administrator\\Desktop\\食品经营企业信息列表(1)(1).xls",False,"Excel","","")
+	r = Excel.GetRowsCount(b,"食品经营企业信息列表")
+	c = Excel.GetColumsCount(b,"食品经营企业信息列表")
+	data = Excel.ReadRange(b,"食品经营企业信息列表","A4:P43")
+End Function
+data_gen() // 生成测试数据
 
 login()  //程序开始执行
 
-Rem 抛出错误
-Function throw_info(e)
-	Return  "错误定位：文件名：【"&e["File"]&"】 位置：【第"&e["Line"]&"行】 错误原因：【"&e["Message"]&"】"
+Function ysl_ping()  //ping云受理平台
+    Dim ping=""
+    Dim result
+    ping = Sys.Command("ping -n 1 59.206.6.96")
+    // ping =Sys.Command("ping -n 1 www.youtube.com")
+    result = InStr(ping,"请求超时",1,false)
+    If result=0
+        TracePrint(ping)
+        TracePrint("网络通畅，执行流程。。。")
+    Else
+        TracePrint ping
+        Throw "网络异常，请检查网络是否通畅！！！"
+    End If
+End Function
+Function throw_info(e)  //自定义异常错误格式
+	Return  "在文件：【"&e["File"]&"】的【第"&e["Line"]&"行】 有一个：【"&e["Message"]&"】报错"
 End Function
 
-Rem 登陆账户
-Function login()
-	TracePrint "执行 login 方法》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》"
-	
+Function login()  // 登陆账户
+	TracePrint "执行 login 方法》》》》》》》"
 	Dim is_exist_ysl  //云受理页面对象是否打开成功
-	Dim ysl  //云受理页面对象
+    Try ELEMENT_REPEAT_COUNT
+        ysl_ping()
+    Catch e
+        Throw e["Message"]
+    End Try
 	login_tab = WebBrowser.Create("firefox","http://59.206.6.96:8385/Inspur.Dzzw.WebApproval/login",30000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"sBrowserPath":"","sStartArgs":""})
-	
 	If login_tab<>Null
-		Try 3
+		Try ELEMENT_REPEAT_COUNT
 			#icon("@res:eh0scuo6-bnvn-hdhe-motf-5c59dh3taqe9.png")
 			is_exist_ysl = UiElement.Exists({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"A","parentid":"cloudSF"}]},{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
 			If Not is_exist_ysl
@@ -41,15 +56,13 @@ Function login()
 				UiElement.SetValue({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"INPUT","id":"password"}]},"123456",{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
 				#icon("@res:fq6d21f8-nhq2-2d1l-eo8a-373mpkhumllj.png")
 				Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"BUTTON","parentid":"frm-login"}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})		
-				
 			End If	
 		Catch e
 			WebBrowser.Close(login_tab,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
-			TracePrint("用户登陆异常，请重试！！！")
-			Throw throw_info(e)
+			TracePrint ("用户登陆异常,请排查原因后在执行程序！！！")
+			Throw e
 		Else
-			Try 3
-				
+			Try ELEMENT_REPEAT_COUNT
 				// #icon("@res:5644je3h-2v4v-gt8t-vokf-9v3p51c6odph.png")
 				#icon("@res:eh0scuo6-bnvn-hdhe-motf-5c59dh3taqe9.png")
 				is_exist_ysl = UiElement.Exists({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"A","parentid":"cloudSF"}]},{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
@@ -63,41 +76,46 @@ Function login()
 				End If	
 			Catch e
 				WebBrowser.Close(ysl,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
-			    Throw throw_info(e)
+				Throw throw_info(e)
 			Else
-				all_lr()
+				Try 
+					all_lr()
+				Catch e
+					TracePrint ("云受理平台异常，请排查原因后在执行程序！！！")
+					Throw e["Message"]
+				End Try
 			End Try
 		End Try
 	Else
 		TracePrint("打开浏览器错误！！！")
 		Throw "打开浏览器错误！！！"
 	End If
+	TracePrint "login 方法结束》》》》》》》"
 End Function
 
-//each_lr_step_1
-Function each_lr_step_1()
-	TracePrint "执行 each_lr_step_1 方法》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》"
+Function each_lr_step_1()  //each_lr_step_1
+	TracePrint "执行 each_lr_step_1 方法》》》》》》》"
 	Try ELEMENT_REPEAT_COUNT		
 		#icon("@res:cqj2vh52-520q-17ml-27as-476rfbgqbjsh.png")
 		Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"A","parentid":"hxryj"}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})
 		Keyboard.Press("End", "press", [],{"iDelayAfter":300,"iDelayBefore":200,"sSimulate":"simulate"})
-        #icon("@res:cobao0cl-gjjl-lgck-jn0k-ccnmf4b6icos.png")
+		#icon("@res:cobao0cl-gjjl-lgck-jn0k-ccnmf4b6icos.png")
 		Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"BUTTON","id":"btnSign"}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})
-		#icon("@res:default.png")
-		UiElement.Wait({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"BUTTON"}]},"show",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
-		#icon("@res:0khdtuo6-c8cj-bc3f-4kug-kt3hf73qrur7.png")
-		Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"BUTTON"}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})	
+		#icon("@res:deod03hb-tgg5-4o4i-55tg-r2sbsotltjj6.png")
+		UiElement.Wait({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"DIV","aaname":"签收成功，请继续办理业务。"}]},"show",100000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
+		Keyboard.Press("Enter", "press", [],{"iDelayAfter":300,"iDelayBefore":200,"sSimulate":"simulate"})
+		#icon("@res:b42r78lc-5r0p-n3m4-dnai-fig7o0oea74f.png")
+		UiElement.Wait({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"DIV","aaname":"签收成功，请继续办理业务。"}]},"hide",100000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
 	Catch e
 		Throw throw_info(e)
 	Else
 		each_lr_step_2()
 	End Try
-	
+	TracePrint "each_lr_step_1 方法结束》》》》》》》"
 End Function
 
-//each_lr_step_2
-Function each_lr_step_2()
-	TracePrint "执行 each_lr_step_2 方法》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》"
+Function each_lr_step_2()  //each_lr_step_2
+	TracePrint "执行 each_lr_step_2 方法》》》》》》》"
 	Try ELEMENT_REPEAT_COUNT
 		#icon("@res:cqj2vh52-520q-17ml-27as-476rfbgqbjsh.png")
 		Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"A","parentid":"hxryj"}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})
@@ -108,25 +126,23 @@ Function each_lr_step_2()
 		#icon("@res:oq9k9g7p-9ies-sb70-54oo-ckp954rjlefu.png")
 		Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"BUTTON","id":"btnSubmit"}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})
 		#icon("@res:rg99jmef-94bi-300r-larm-jqf26o2i8jfi.png")
-		UiElement.Wait({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"DIV","aaname":"提交成功!"}]},"show",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
-		#icon("@res:kcivkrlp-algc-86s3-i0qa-i7pcg2huh45c.png")
-		Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"BUTTON"}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})
+		UiElement.Wait({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"DIV","aaname":"提交成功!"}]},"show",100000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
+		Keyboard.Press("Enter", "press", [],{"iDelayAfter":300,"iDelayBefore":200,"sSimulate":"simulate"})
 		#icon("@res:3llf30fi-ll65-a7rc-s1bk-fotlnhq8dl2u.png")
-		UiElement.Wait({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"DIV","aaname":"您是否继续办理下一环节？"}]},"show",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
-		#icon("@res:u7buu9d5-9nah-5vie-dm85-qgt7bl4lkvj2.png")
-		Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"BUTTON","aaname":"确定"}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})	
+		UiElement.Wait({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"DIV","aaname":"您是否继续办理下一环节？"}]},"show",100000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
+		Keyboard.Press("Enter", "press", [],{"iDelayAfter":300,"iDelayBefore":200,"sSimulate":"simulate"})
+		#icon("@res:b42r78lc-5r0p-n3m4-dnai-fig7o0oea74f.png")
+		UiElement.Wait({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"A","parentid":"jiben"}]},"show",100000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
 	Catch e
 		Throw throw_info(e)
 	Else
 		each_lr_step_3()
 	End Try
-	
-	
+	TracePrint "each_lr_step_2 方法结束》》》》》》》"
 End Function
 
-//each_lr_step_3
-Function each_lr_step_3()
-	TracePrint "执行 each_lr_step_3 方法》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》"
+Function each_lr_step_3()  //each_lr_step_3
+	TracePrint "执行 each_lr_step_3 方法》》》》》》》"
 	Try ELEMENT_REPEAT_COUNT
 		#icon("@res:cqj2vh52-520q-17ml-27as-476rfbgqbjsh.png")
 		Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"A","parentid":"hxryj"}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})
@@ -137,22 +153,23 @@ Function each_lr_step_3()
 		#icon("@res:ase7dkuj-nv9f-0123-hva9-vefjc8l2fhrv.png")
 		Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"BUTTON","id":"btnSubmit"}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})
 		#icon("@res:2sgm6oak-id79-69j2-kjun-c5j7705hmipg.png")
-		UiElement.Wait({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"DIV","aaname":"提交成功!"}]},"show",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
-		#icon("@res:pefv1u13-uo2a-9817-gokr-cd8692d33kp8.png")
-		Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"BUTTON"}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})
+		UiElement.Wait({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"DIV","aaname":"提交成功!"}]},"show",100000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
+		Keyboard.Press("Enter", "press", [],{"iDelayAfter":300,"iDelayBefore":200,"sSimulate":"simulate"})
 		#icon("@res:3kgjlc8f-0tlb-cark-pkq9-8huqgalos5tp.png")
-		UiElement.Wait({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"DIV","aaname":"您是否继续办理下一环节？"}]},"show",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
-		#icon("@res:rp17vv0r-uaul-j7vu-8v3d-6d1rdqgfmtr7.png")
-		Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"BUTTON","aaname":"确定"}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})
+		UiElement.Wait({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"DIV","aaname":"您是否继续办理下一环节？"}]},"show",100000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
+		Keyboard.Press("Enter", "press", [],{"iDelayAfter":300,"iDelayBefore":200,"sSimulate":"simulate"})
+		#icon("@res:b42r78lc-5r0p-n3m4-dnai-fig7o0oea74f.png")
+		UiElement.Wait({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"A","parentid":"jiben"}]},"show",100000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
 	Catch e
-	    Throw throw_info(e)
+		Throw throw_info(e)
 	Else
 		each_lr_step_4()
 	End Try
+	TracePrint "each_lr_step_3 方法结束》》》》》》》"
 End Function
-//each_lr_step_4
-Function each_lr_step_4()
-	TracePrint "执行 each_lr_step_4 方法》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》"
+
+Function each_lr_step_4() //each_lr_step_4
+	TracePrint "执行 each_lr_step_4 方法》》》》》》》"
 	Try ELEMENT_REPEAT_COUNT
 		#icon("@res:cqj2vh52-520q-17ml-27as-476rfbgqbjsh.png")
 		Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"A","parentid":"hxryj"}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})
@@ -164,23 +181,23 @@ Function each_lr_step_4()
 		Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"BUTTON","id":"btnSubmit"}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})
 		Keyboard.Press("End", "press", [],{"iDelayAfter":300,"iDelayBefore":200,"sSimulate":"simulate"})
 		#icon("@res:5hmns1mt-9ltg-tgp0-9c89-kbu4h08elsvq.png")
-		UiElement.Wait({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"DIV","aaname":"提交成功!"}]},"show",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
-		#icon("@res:7vmt2nln-cevj-d1fk-ejo0-6grf8g1las0n.png")
-		Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"BUTTON"}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})
+		UiElement.Wait({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"DIV","aaname":"提交成功!"}]},"show",100000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
+		Keyboard.Press("Enter", "press", [],{"iDelayAfter":300,"iDelayBefore":200,"sSimulate":"simulate"})
 		#icon("@res:9o8mg5me-j3gv-nv5t-41i2-jjknace9hg4c.png")
-		UiElement.Wait({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"DIV","aaname":"您是否继续办理下一环节？"}]},"show",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
-		#icon("@res:e7jv8e7g-mvm8-2eu8-66i0-3dph4k9r6iri.png")
-		Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"BUTTON","aaname":"确定"}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})
+		UiElement.Wait({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"DIV","aaname":"您是否继续办理下一环节？"}]},"show",100000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
+		Keyboard.Press("Enter", "press", [],{"iDelayAfter":300,"iDelayBefore":200,"sSimulate":"simulate"})
+		#icon("@res:b42r78lc-5r0p-n3m4-dnai-fig7o0oea74f.png")
+		UiElement.Wait({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"A","parentid":"jiben"}]},"show",100000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
 	Catch e
 		Throw throw_info(e)
 	Else
 		each_lr_step_5()
 	End Try
+	TracePrint "each_lr_step_4 方法结束》》》》》》》"
 End Function
 
-//each_lr_step_5
-Function each_lr_step_5()
-	TracePrint "执行 each_lr_step_5 方法》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》"
+Function each_lr_step_5()  //each_lr_step_5
+	TracePrint "执行 each_lr_step_5 方法》》》》》》》"
 	Try ELEMENT_REPEAT_COUNT
 		#icon("@res:cqj2vh52-520q-17ml-27as-476rfbgqbjsh.png")
 		Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"A","parentid":"hxryj"}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})
@@ -192,16 +209,16 @@ Function each_lr_step_5()
 	Else
 		each_lr_step_6()
 	End Try
+	TracePrint "each_lr_step_5 方法结束》》》》》》》"
 End Function
 
-//each_lr_step_6
-Function each_lr_step_6()
-	TracePrint "执行 each_lr_step_6 方法》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》"
+Function each_lr_step_6()  //each_lr_step_6
+	TracePrint "执行 each_lr_step_6 方法》》》》》》》"
 	Try ELEMENT_REPEAT_COUNT
 		If person_data<>[]
 			Keyboard.Press("Home", "press", [],{"iDelayAfter":300,"iDelayBefore":200,"sSimulate":"simulate"})
 			#icon("@res:9jqnugt0-1umv-ijf4-1r9r-sjb8prjjjcll.png")
-			UiElement.Wait({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"A","parentid":"tbody"}]},"show",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
+			UiElement.Wait({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"A","parentid":"tbody"}]},"show",100000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
 			#icon("@res:kctqnef1-st9u-blsl-p6h3-808l67gdvna3.png")
 			UiElement.SetValue({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"INPUT","id":"docCode"}]},person_data[0],{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
 			#icon("@res:79m8jf33-uvss-854j-8959-l9c1hroisq3d.png")
@@ -214,32 +231,29 @@ Function each_lr_step_6()
 			#icon("@res:b7eh0m81-ns43-s61v-099f-ja6rliejhadn.png")
 			UiElement.SetValue({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"TEXTAREA","id":"Permit_Content"}]},person_data[4],{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
 			#icon("@res:default.png")
-			UiElement.Wait({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"BUTTON","aaname":"确定"}]},"show",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
+			UiElement.Wait({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"BUTTON","aaname":"确定"}]},"show",100000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
 			#icon("@res:n5m8agde-ikc5-8nhr-7m9a-2uobc5kv8bs5.png")
 			Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"BUTTON","aaname":"确定"}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})
 			#icon("@res:5h4baboi-v127-v1qf-ov85-01to7ftbau7e.png")
-			UiElement.Wait({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"DIV","aaname":"准予许可发证成功！"}]},"show",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
-			#icon("@res:stbqpj3u-rd6k-qcpu-njsj-rtjpi9jr6h01.png")
-			Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"BUTTON"}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":1000,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})
+			UiElement.Wait({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"DIV","aaname":"准予许可发证成功！"}]},"show",100000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
+			Keyboard.Press("Enter", "press", [],{"iDelayAfter":300,"iDelayBefore":200,"sSimulate":"simulate"})
 			#icon("@res:5h4baboi-v127-v1qf-ov85-01to7ftbau7e.png")
-			UiElement.Wait({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"DIV","aaname":"准予许可发证成功！"}]},"hide",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
+			UiElement.Wait({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"DIV","aaname":"准予许可发证成功！"}]},"hide",100000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
 		Else
 			Throw "查找数据失败，未查找到数据或数据不唯一，清检查！！！"
 		End If    
 	Catch e
 		Throw throw_info(e)
 	End Try
-	
+	TracePrint "each_lr_step_6 方法结束》》》》》》》"
 End Function
 
-Rem 录入每一条流程
-Function each_lr()
-	TracePrint "执行 each_lr 方法》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》"
+Function each_lr()  // 录入每一条数据流程
+	TracePrint "执行 each_lr 方法》》》》》》》"
 	Dim current_step  //当前流程属于第几步
 	Dim next_step   //下一个流程属于第几步
 	Dim checkout   //签收
-	//初始化变量
-	person_data=[]
+	person_data=[]  	//初始化变量
 	society_code =''
 	Try
 		//获取第一步流程社会信用代码值
@@ -247,14 +261,13 @@ Function each_lr()
 		If Len(society_code)<>0
 			person_data = person_info(society_code,data)  //获取个人数据 
 		End If
-		If person_data<>[]
+		If Len(person_data)>0
 			#icon("@res:cqj2vh52-520q-17ml-27as-476rfbgqbjsh.png")
 			Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"A","parentid":"hxryj"}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})
 			#icon("@res:m64nl9bt-au7f-3a8l-2lco-po51no4u3glf.png")
 			current_step = UiElement.GetValue({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"TABLE","parentid":"nodeUsersInfo"},{"tag":"TD"}]},{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
 			Select Case current_step
 			Case "审查"
-				TracePrint person_data
 				#icon("@res:9983ja3o-c691-2uqq-hish-47liobu80r3c.png")
 				checkout = UiElement.GetAttribute({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"BUTTON","id":"btnSubmit"}]},"disabled",{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
 				If checkout="disabled"
@@ -273,34 +286,43 @@ Function each_lr()
 			Throw "查找数据失败，未查找到数据或数据不唯一，清检查！！！"
 		End If
 	Catch e
-		Throw throw_info(e)
+		Throw e["Message"]
 	End Try
+	TracePrint "each_lr 方法结束》》》》》》》"
 End Function
 
-Rem "遍历需要录入的流程列表 一条一条录入"
-Function all_lr()
-	TracePrint "执行 all_lr 方法》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》"
+Function all_lr()  //"遍历需要录入的流程列表 一条一条录入"
+	TracePrint "执行 all_lr 方法》》》》》》》"
 	Dim data_count  //数据条数	
 	Dim page_count  //数据页数
 	Dim is_exist_banli  //办理对象是否存在
 	Dim true_count_lr=0  //成功录入数据条数
 	Dim false_count_lr=0  //失败录入数据条数
-	
+	Dim current_page=1 //当前录入属于第几页
 	current_id_lr=1 //当前录入的流程ID 
 	search_result="" //接收查询本地是否有相关数据返回结果
 	Do While True
-		Try FLOW_REPEAT_COUNT
+		Try 
 			id_lr=""  // 事项编号
+			If Len(data)<=0
+				Throw "源数据为空，请检查源数据后再执行程序！！！"
+			End If
 			#icon("@res:eh0scuo6-bnvn-hdhe-motf-5c59dh3taqe9.png")
 			Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"A","parentid":"cloudSF"}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})
 			#icon("@res:3q7t0rj6-k8l6-jipc-8hm2-n8a2tujtsl3s.png")
-			Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"SPAN","parentid":"refresh_approval-cloudaccept-grid-table"}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})
+			Mouse.Action({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"SPAN","parentid":"refresh_approval-cloudaccept-grid-table"}]},"left","click",10000,{"bContinueOnError":False,"iDelayAfter":1000,"iDelayBefore":200,"bSetForeground":True,"sCursorPosition":"Center","iCursorOffsetX":0,"iCursorOffsetY":0,"sKeyModifiers":[],"sSimulate":"simulate","bMoveSmoothly":False})
+			current_page = CInt(current_id_lr / 15)
+			If current_page>=1
+				#icon("@res:gfnbonr2-trfa-5imm-u6qa-hcp1udibv7mv.png")
+				UiElement.SetValue({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"INPUT","type":"text","parentid":"approval-cloudaccept-grid-pager_center"}]},2,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
+				#icon("@res:gfnbonr2-trfa-5imm-u6qa-hcp1udibv7mv.png")
+				Keyboard.PressKey({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"INPUT","type":"text","parentid":"approval-cloudaccept-grid-pager_center"}]},"Enter",20,10000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200,"bSetForeground":True,"sKeyModifiers":[],"sSimulate":"simulate","bClickBeforeInput":True})
+			End If
 			#icon("@res:0cvr2ev5-iiev-anis-rs0n-pk5bih139gf9.png")
-			is_exist_banli = UiElement.Exists({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"A","parentid":CStr(current_id_lr),"aaname":"办理"}]},{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
+			is_exist_banli = UiElement.Exists({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"A","parentid":CStr(current_id_lr),"aaname":"办理"}]},{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":2000})
 			If is_exist_banli 
 				#icon("@res:cf92dsjj-172e-ce9g-6pek-oe67jia0i0c5.png")
-				id_lr = UiElement.GetValue({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"TABLE","id":"approval-cloudaccept-grid-table"},{"tag":"TD","parentid":"1","isleaf":"1","tableCol":"3"}]},{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
-				
+				id_lr = UiElement.GetValue({"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"TABLE","id":"approval-cloudaccept-grid-table"},{"tag":"TD","parentid":CStr(current_id_lr),"isleaf":"1","tableCol":"3"}]},{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
 				If id_lr<>"" Or id_lr<>" "
 					search_result = search(id_lr)
 					If search_result<>Null
@@ -313,10 +335,11 @@ Function all_lr()
 			Else
 				If true_count_lr>0 Or false_count_lr>0
 					TracePrint("本次共录入"&true_count_lr+false_count_lr&"条数据，"&true_count_lr&"条录入成功,"&false_count_lr&"条录入失败！！！")
-					WebBrowser.Close(login_tab,{"bContinueOnError":false,"iDelayAfter":300,"iDelayBefore":200})
-                    Break
+					WebBrowser.Close(login_tab,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
+					Break
 				Else
 					TracePrint("未查找到需要录入的新增数据，请先进行第一步录入流程录入数据  ！！！")
+					WebBrowser.Close(login_tab,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
 					Break
 				End If
 			End If
@@ -327,27 +350,32 @@ Function all_lr()
 				each_lr()
 			Catch e
 				current_id_lr=current_id_lr+1
-				result_lr(id_lr,society_code,"录入失败")
 				false_count_lr=false_count_lr+1
+				result_lr(id_lr,society_code,"录入失败")
+				#icon("@res:eh0scuo6-bnvn-hdhe-motf-5c59dh3taqe9.png")
+				ysl = WebBrowser.GoURL(login_tab,"http://59.206.6.96:8385/Inspur.Dzzw.WebApproval/main ",True,{"wnd":[{"cls":"MozillaWindowClass","title":"*","app":"firefox"}],"html":[{"tag":"IFRAME","id":"tabframe_tab_main-index"},{"tag":"A","parentid":"cloudSF"}]},30000,{"bContinueOnError":False,"iDelayAfter":300,"iDelayBefore":200})
+				If ysl<>1
+					Throw "跳转云处理审批平台失败，请重试！！！"  
+				End If
 			Else
-				TracePrint "录入成功"
 				result_lr(id_lr,society_code)
 				true_count_lr=true_count_lr+1
 			End Try
 		End Try
 	Loop	
+	TracePrint "all_lr 方法结束》》》》》》》"
 End Function
 
-
 Function result_lr(id_lr,society_code='',result="录入成功")  //成功/失败数据写入文件 参数为：流程编号，个人社会信用代码，录入结果
-	TracePrint "执行 result_lr 方法》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》"
+	TracePrint result&"执行 result_lr 方法》》》》》》》"
 	Dim file_time = Time.Format(Time.Date(),"yyyy-mm-dd")
 	INI.Write(@res""&file_time&".ini", CStr(result), CStr(id_lr),CStr(society_code) )
+	TracePrint "result_lr 方法结束》》》》》》》"
 End Function
 
 Function person_info(society_code,data)  //通过个人社会信用代码在数据中查找个人信息 参数为：个人社会信用代码，源数据
-	TracePrint "执行 person_info 方法》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》"    
-	TracePrint society_code
+	TracePrint "执行 person_info 方法》》》》》》》"  
+	TracePrint "用户社会信用代码："&society_code
 	Dim person=[] //定义人员临时变量
 	society_code=CStr(society_code)
 	society_code = Replace(society_code," ","",False)
@@ -363,29 +391,26 @@ Function person_info(society_code,data)  //通过个人社会信用代码在数�
 	Next
 	If Len(person)=5  //大于6或小于6则数据有异常
 		TracePrint person
+		TracePrint "person_info 方法结束》》》》》》》"
 		Return person
 	Else
 		TracePrint("数据异常(未查找到数据或数据不唯一)，请检查")
-		TracePrint(person)
+		TracePrint "person_info 方法结束》》》》》》》"
 		Return []
 	End If	
 End Function
 
-
 Function search(id_lr)  //查询本地是否有相关数据 无则返回null 有则返回文件路径 参数为：流程编号
-	TracePrint "执行 search 方法》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》"
-	Dim file_time = Time.Format(Time.Date(),"yyyy-mm-dd")  //获取当天时间
-	Dim result_lr_file=@res""&file_time&".ini"  //文件名
+	TracePrint "执行 search 方法》》》》》》》" 
+	TracePrint "申办编号："&id_lr
+	Dim result_lr_file="" //文件名
 	Dim is_result_lr_file  //判断result_lr文件是否存在
 	Dim array_key  //录入失败事项编号数组
 	Dim key_value  //事项编号值
 	Dim key_count  //录入失败键数量
 	Dim file_array //res目录下ini文件数组
 	Dim file_name //res目录下ini文件名
-	// For Each value In file_array
-	// 	file_name = Split(value,'\\')
-	// 	file_name = file_name[UBound(file_name)]
-	// Next
+	
 	file_array = File.SearchFile(@res"","*.ini",False)
 	If Len(file_array)>0
 		For i = UBound(file_array) To 0 Step -1 
@@ -401,71 +426,12 @@ Function search(id_lr)  //查询本地是否有相关数据 无则返回null 有
 			Next
 			TracePrint "查询【"&file_array[i]&"】文件无申办编号为："&id_lr&"数据！！！"
 		Next
+		TracePrint "search 方法结束》》》》》》》"
 		Return Null
 	Else
+		TracePrint "search 方法结束》》》》》》》"
 		Return Null
-	End If
+	End If	
 End Function
-
-// //录入失败数据重新录入操作
-// Function repeat_try_false_lr(file_time)
-// 	Dim result_lr_file=@res""&file_time&".ini"  //文件名
-// 	Dim is_result_lr_file  //判断result_lr文件是否存在
-// 	Dim array_key  //录入失败事项编号数组
-// 	Dim key_value  //事项编号值
-// 	Dim key_count  //录入失败键数量
-
-// 	is_result_lr_file = File.FileExists(result_lr_file)
-// 	If is_result_lr_file
-// 		array_key = INI.EnumKey(result_lr_file, "录入失败")
-// 		For Each key In array_key
-// 			key_value = INI.Read(result_lr_file, "录入失败", key, "")
-// 			If key_value<>""
-// 				Try
-// 					// key_value=CInt(key_value)
-// 					Select Case key_value
-// 					Case "1"
-// 						each_lr_step_1()
-// 					Case "2"
-// 						each_lr_step_2()
-// 					Case "3"
-// 						each_lr_step_3()
-// 					Case "4"
-// 						each_lr_step_4()   
-// 					Case "5"
-// 						each_lr_step_5()
-// 					Case "6"
-// 						each_lr_step_6() 
-// 					End Select
-// 				Catch e
-// 					result_lr(key,society_code,result="录入失败")
-// 					TracePrint(e)
-// 				Else
-// 					result_lr(id_lr)
-// 					INI.DeleteKey(result_lr_file, "录入失败", key)
-// 					key_count= INI.EnumKey(result_lr_file, "录入失败")
-// 					If Len(key_count)<=0
-// 						TracePrint("当前日期数据 已全部录入成功，无录入失败数据 ！！！")
-// 						INI.DeleteSection(result_lr_file, "录入失败")
-// 					End If
-// 				End Try
-
-// 			Else
-// 				TracePrint("此流程录入数据未正确写入文件，请检查 ！！！")
-// 			End If
-
-// 		Next
-
-
-// 	Else
-// 		TracePrint("未查找到当前日期录入数据！！！")
-// 	End If
-
-// End Function
-
-// Dim file_time = Time.Format(Time.Date(),"yyyy-mm-dd")
-
-// repeat_try_false_lr(file_time)
-
 
 
